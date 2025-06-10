@@ -10,12 +10,20 @@ fn main() {
         let mut input = String::new();
         stdin.read_line(&mut input).unwrap();
 
-        if input.trim().is_empty() {
-            break;
+        if starts_with_echo(&input) {
+            println!("{}", format_input(input.trim()));
         } else if "exit 0" == input.trim() {
             break;
         } else {
             println!("{}: command not found", input.trim());
         }
     }
+}
+
+fn starts_with_echo(s: &str) -> bool {
+    s.starts_with("echo ")
+}
+
+fn format_input(s: &str) -> String {
+    s.replace("echo ", "")
 }
