@@ -41,7 +41,7 @@ fn handle_command_type(s: &str) -> String {
             format!("{} is a shell builtin", command.unwrap())
         },
         _ => {
-            String::from("invalid_command: not found")
+            format!("{}: not found", command.unwrap())
         }
     }
 }
