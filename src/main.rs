@@ -53,19 +53,17 @@ fn main() -> ExitCode {
     }
 }
 
-fn handle_command_type(s: &str) -> String {
-    let command = s.split_whitespace().nth(1);
-
+fn handle_command_type(command: &str) -> String {
     match command {
-        Some("echo") | Some("exit") | Some("type") => {
-            format!("{} is a shell builtin", command.unwrap())
+        "echo" | "exit" | "type" => {
+            format!("{command} is a shell builtin")
         },
-        _ => match handle_path(command.unwrap()) {
+        _ => match handle_path(command) {
             Some(path) => {
-                format!("{} is {}", command.unwrap(), path.display())
+                format!("{command} is {}", path.display())
             }
             None => {
-                format!("{}: not found", command.unwrap())
+                format!("{command}: not found")
             }
         }
     }
