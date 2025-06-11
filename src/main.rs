@@ -11,12 +11,11 @@ fn main() -> ExitCode {
         print!("$ ");
         io::stdout().flush().unwrap();
 
-        let stdin = io::stdin();
         let mut input = String::new();
-        stdin.read_line(&mut input).unwrap();
-
+        if io::stdin().read_line(&mut input).unwrap() == 0 {
+            continue;
+        }
         let input = input.trim_end();
-
         if input.is_empty() {
             continue;
         }
@@ -34,8 +33,8 @@ fn main() -> ExitCode {
                     match std::process::Command::new(executable[0]).args(&executable[1..]).spawn() {
                         Ok(program) => match program.wait_with_output() {
                             Ok(output) => {
-                                println!("{}", String::from_utf8_lossy(&output.stderr));
-                                println!("{}", String::from_utf8_lossy(&output.stdout));
+                                print!("{}", String::from_utf8_lossy(&output.stderr));
+                                print!("{}", String::from_utf8_lossy(&output.stdout));
                             }
                             Err(err) => {
                                 println!("{}", err.to_string());
