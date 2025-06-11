@@ -1,5 +1,6 @@
 #[allow(unused_imports)]
 use std::io::{self, Write};
+use std::path::{Path, PathBuf};
 
 fn main() {
     loop {
@@ -36,12 +37,39 @@ fn starts_with_type(s: &str) -> bool {
 
 fn handle_command_type(s: &str) -> String {
     let command = s.split_whitespace().nth(1);
+
     match command {
         Some("echo") | Some("exit") | Some("type") => {
             format!("{} is a shell builtin", command.unwrap())
         },
-        _ => {
-            format!("{}: not found", command.unwrap())
+        _ => match handle_path(command.unwrap()) {
+            Some(path) => {
+                format!("{} is {}", command.unwrap(), path.display())
+            }
+            None => {
+                format!("{}: not found", command.unwrap())
+            }
         }
     }
+}
+
+fn handle_path(command: &str) -> Option<PathBuf> {
+    let path = std::env::var("PATH").ok()?;
+    for dir in path.split(":") {
+        match std::fs::read_dir(Path::new(dir)) {
+            Ok(mut read_dir) => {
+                if let Some(path) = read_dir.find(|maybe_dir_entry| {
+                    maybe_dir_entry
+                        .as_ref()
+                        .is_ok_and(|dir_entry| dir_entry.file_name() == command)
+                }) {
+                    if let Ok(path) = path {
+                        return Some(path.path());
+                    }
+                }
+            }
+            Err(_) => continue,
+        }
+    }
+    None
 }
