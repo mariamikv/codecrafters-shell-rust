@@ -15,10 +15,6 @@ fn main() -> ExitCode {
         let mut input = String::new();
         stdin.read_line(&mut input).unwrap();
 
-        if input.is_empty() {
-            return ExitCode::SUCCESS;
-        }
-
         match Command::handle_command(input.as_str()) {
             Ok(command) => match command {
                 Command::Exit(code) => return code,
@@ -29,13 +25,8 @@ fn main() -> ExitCode {
                     println!("{}", handle_command_type(command_type));
                 }
                 Command::Executable(executable) => {
-                    if handle_path(executable[0]).is_none() {
-                        eprintln!("{}: command not found", executable[0]);
-                        continue;
-                    }
-
                     match std::process::Command::new(executable[0]).args(&executable[1..]).spawn() {
-                        Ok(child) => match child.wait_with_output() {
+                        Ok(program) => match program.wait_with_output() {
                             Ok(output) => {
                                 println!("{}", String::from_utf8_lossy(&output.stderr));
                                 println!("{}", String::from_utf8_lossy(&output.stdout));
