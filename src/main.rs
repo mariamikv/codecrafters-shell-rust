@@ -1,8 +1,12 @@
+pub mod command;
+
 #[allow(unused_imports)]
 use std::io::{self, Write};
 use std::path::{Path, PathBuf};
+use std::process::{ExitCode};
+use crate::command::Command;
 
-fn main() {
+fn main() -> ExitCode {
     loop {
         print!("$ ");
         io::stdout().flush().unwrap();
@@ -11,28 +15,46 @@ fn main() {
         let mut input = String::new();
         stdin.read_line(&mut input).unwrap();
 
-        if starts_with_echo(&input) {
-            println!("{}", format_input(input.trim()));
-        } else if "exit 0" == input.trim() {
-            break;
-        } else if starts_with_type(&input) {
-            println!("{}", handle_command_type(input.trim()));
-        } else {
-            println!("{}: command not found", input.trim());
+        if input.is_empty() {
+            return ExitCode::SUCCESS;
+        }
+
+        match Command::handle_command(input.as_str()) {
+            Ok(command) => match command {
+                Command::Exit(code) => return code,
+                Command::Echo(echo) => {
+                    println!("{}", echo);
+                }
+                Command::Type(command_type) => {
+                    println!("{}", handle_command_type(command_type));
+                }
+                Command::Executable(executable) => {
+                    if handle_path(executable[0]).is_none() {
+                        eprintln!("{}: command not found", executable[0]);
+                        continue;
+                    }
+
+                    match std::process::Command::new(executable[0]).args(&executable[1..]).spawn() {
+                        Ok(child) => match child.wait_with_output() {
+                            Ok(output) => {
+                                println!("{}", String::from_utf8_lossy(&output.stderr));
+                                println!("{}", String::from_utf8_lossy(&output.stdout));
+                            }
+                            Err(err) => {
+                                println!("{}", err.to_string());
+                            },
+                        },
+                        Err(err) => {
+                            println!("{}", err.to_string());
+                        }
+                    }
+                }
+            }
+            Err(e) => {
+                println!("{}", e.to_string());
+            }
         }
     }
-}
-
-fn starts_with_echo(s: &str) -> bool {
-    s.starts_with("echo ")
-}
-
-fn format_input(s: &str) -> String {
-    s.replace("echo ", "")
-}
-
-fn starts_with_type(s: &str) -> bool {
-    s.starts_with("type ")
 }
 
 fn handle_command_type(s: &str) -> String {
