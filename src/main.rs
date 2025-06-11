@@ -40,8 +40,8 @@ fn main() -> ExitCode {
                                 println!("{}", err.to_string());
                             },
                         },
-                        Err(err) => {
-                            println!("{}", err.to_string());
+                        Err(_) => {
+                            println!("{}: command not found", executable[0]);
                         }
                     }
                 }
