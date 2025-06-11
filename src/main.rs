@@ -15,7 +15,13 @@ fn main() -> ExitCode {
         let mut input = String::new();
         stdin.read_line(&mut input).unwrap();
 
-        match Command::handle_command(input.as_str()) {
+        let input = input.trim_end();
+
+        if input.is_empty() {
+            continue;
+        }
+
+        match Command::handle_command(input) {
             Ok(command) => match command {
                 Command::Exit(code) => return code,
                 Command::Echo(echo) => {
