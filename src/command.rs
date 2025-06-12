@@ -30,7 +30,7 @@ impl<'k> Command<'k> {
                 Ok(Self::Pwd("./your_program.sh"))
             }
             "cd" => {
-                Ok(Self::Cd(value.strip_prefix("cd").unwrap_or("")))
+                Ok(Self::Cd(value.strip_prefix("cd").unwrap_or("").trim()))
             }
             _ => Ok(Self::Executable(value.split_whitespace().collect())),
         }

@@ -91,9 +91,9 @@ fn handle_command_type(command: &str) -> String {
 }
 
 fn handle_path(command: &str) -> Option<PathBuf> {
-    let path = std::env::var("PATH").ok()?;
+    let path = env::var("PATH").ok()?;
     for dir in path.split(":") {
-        match std::fs::read_dir(Path::new(dir)) {
+        match fs::read_dir(Path::new(dir)) {
             Ok(mut read_dir) => {
                 if let Some(path) = read_dir.find(|maybe_dir_entry| {
                     maybe_dir_entry
