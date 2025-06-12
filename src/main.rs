@@ -102,5 +102,10 @@ fn handle_path(command: &str) -> Option<PathBuf> {
 }
 
 fn get_absolute_path(relative_path: &str) -> io::Result<PathBuf> {
-    fs::canonicalize(relative_path)
+    let absolute_path = fs::canonicalize(relative_path)?;
+    if let Some(parent) = absolute_path.parent() {
+        Ok(parent.to_path_buf())
+    } else {
+        Err(io::Error::new(io::ErrorKind::NotFound, "path not found"))
+    }
 }
