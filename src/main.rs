@@ -45,7 +45,8 @@ fn main() -> ExitCode {
                     match env::set_current_dir(path) {
                         Ok(_) => {}
                         Err(_) => {
-                            eprintln!("cd: {}: No such file or directory", path.display());
+                            eprintln!("cd:{}: No such file or directory", path.display());
+                            io::stderr().flush().unwrap();
                         }
                     }
                 }
@@ -75,7 +76,7 @@ fn main() -> ExitCode {
 
 fn handle_command_type(command: &str) -> String {
     match command {
-        "echo" | "exit" | "type" | "pwd" => {
+        "echo" | "exit" | "type" | "pwd" | "cd" => {
             format!("{command} is a shell builtin")
         },
         _ => match handle_path(command) {
