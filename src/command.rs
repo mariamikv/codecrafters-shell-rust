@@ -5,6 +5,7 @@ pub enum Command<'k> {
     Exit(ExitCode),
     Echo(&'k str),
     Type(&'k str),
+    Pwd(&'k str),
     Executable(Vec<&'k str>),
 }
 
@@ -24,10 +25,14 @@ impl<'k> Command<'k> {
                 }
                 None => anyhow::bail!("type requires one argument"),
             },
+            "pwd" => {
+                Ok(Self::Pwd("./your_program.sh"))
+            }
             _ => Ok(Self::Executable(value.split_whitespace().collect())),
         }
     }
 }
+
 fn parse_exit_command(command: &str) -> Result<ExitCode, anyhow::Error> {
     let exit_code = command
         .split_whitespace()

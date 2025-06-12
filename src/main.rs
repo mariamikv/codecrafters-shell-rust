@@ -5,6 +5,7 @@ use std::io::{self, Write};
 use std::path::{Path, PathBuf};
 use std::process::{ExitCode};
 use crate::command::Command;
+use std::fs;
 
 fn main() -> ExitCode {
     loop {
@@ -28,6 +29,16 @@ fn main() -> ExitCode {
                 }
                 Command::Type(command_type) => {
                     println!("{}", handle_command_type(command_type));
+                }
+                Command::Pwd(pwd) => {
+                    match get_absolute_path(pwd) {
+                        Ok(path) => {
+                            println!("{}", path.display())
+                        }
+                        Err(e) => {
+                            println!("Error getting absolute path: {}", e);
+                        }
+                    }
                 }
                 Command::Executable(executable) => {
                     match std::process::Command::new(executable[0]).args(&executable[1..]).spawn() {
@@ -88,4 +99,8 @@ fn handle_path(command: &str) -> Option<PathBuf> {
         }
     }
     None
+}
+
+fn get_absolute_path(relative_path: &str) -> io::Result<PathBuf> {
+    fs::canonicalize(relative_path)
 }
