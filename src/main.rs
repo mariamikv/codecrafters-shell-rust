@@ -5,7 +5,7 @@ use std::io::{self, Write};
 use std::path::{Path, PathBuf};
 use std::process::{ExitCode};
 use crate::command::Command;
-use std::fs;
+use std::{env, fs};
 
 fn main() -> ExitCode {
     loop {
@@ -37,6 +37,15 @@ fn main() -> ExitCode {
                         }
                         Err(e) => {
                             println!("Error getting absolute path: {}", e);
+                        }
+                    }
+                }
+                Command::Cd(path_str) => {
+                    let path = Path::new(path_str);
+                    match env::set_current_dir(path) {
+                        Ok(_) => {}
+                        Err(_) => {
+                            eprintln!("cd: {}: No such file or directory", path.display());
                         }
                     }
                 }

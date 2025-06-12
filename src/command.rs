@@ -6,6 +6,7 @@ pub enum Command<'k> {
     Echo(&'k str),
     Type(&'k str),
     Pwd(&'k str),
+    Cd(&'k str),
     Executable(Vec<&'k str>),
 }
 
@@ -27,6 +28,9 @@ impl<'k> Command<'k> {
             },
             "pwd" => {
                 Ok(Self::Pwd("./your_program.sh"))
+            }
+            "cd" => {
+                Ok(Self::Cd(value.strip_prefix("cd").unwrap_or("")))
             }
             _ => Ok(Self::Executable(value.split_whitespace().collect())),
         }
