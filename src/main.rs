@@ -66,7 +66,7 @@ fn main() -> ExitCode {
 
 fn handle_command_type(command: &str) -> String {
     match command {
-        "echo" | "exit" | "type" => {
+        "echo" | "exit" | "type" | "pwd" => {
             format!("{command} is a shell builtin")
         },
         _ => match handle_path(command) {
