@@ -30,7 +30,8 @@ impl<'k> Command<'k> {
                 Ok(Self::Pwd("./your_program.sh"))
             }
             "cd" => {
-                Ok(Self::Cd(value.strip_prefix("cd").unwrap_or("").trim()))
+                let arg = value.get(2..).unwrap_or("").trim();
+                Ok(Self::Cd(arg))
             }
             _ => Ok(Self::Executable(value.split_whitespace().collect())),
         }

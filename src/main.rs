@@ -37,7 +37,7 @@ fn main() -> ExitCode {
                     }
                 }
                 Command::Cd(path_str) => {
-                    let path = Path::new(path_str);
+                    let path = Path::new(path_str.trim());
                     match env::set_current_dir(path) {
                         Ok(_) => {}
                         Err(_) => {
