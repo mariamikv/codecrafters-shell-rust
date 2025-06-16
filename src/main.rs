@@ -30,14 +30,10 @@ fn main() -> ExitCode {
                 Command::Type(command_type) => {
                     println!("{}", handle_command_type(command_type));
                 }
-                Command::Pwd(pwd) => {
-                    match get_absolute_path(pwd) {
-                        Ok(path) => {
-                            println!("{}", path.display())
-                        }
-                        Err(e) => {
-                            println!("Error getting absolute path: {}", e);
-                        }
+                Command::Pwd(_) => {
+                    match env::current_dir() {
+                        Ok(path) => println!("{}", path.display()),
+                        Err(e) => println!("Error getting current dir: {}", e),
                     }
                 }
                 Command::Cd(path_str) => {
@@ -109,13 +105,4 @@ fn handle_path(command: &str) -> Option<PathBuf> {
         }
     }
     None
-}
-
-fn get_absolute_path(relative_path: &str) -> io::Result<PathBuf> {
-    let absolute_path = fs::canonicalize(relative_path)?;
-    if let Some(parent) = absolute_path.parent() {
-        Ok(parent.to_path_buf())
-    } else {
-        Err(io::Error::new(io::ErrorKind::NotFound, "path not found"))
-    }
 }
