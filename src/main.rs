@@ -41,7 +41,7 @@ fn main() -> ExitCode {
                     match env::set_current_dir(path) {
                         Ok(_) => {}
                         Err(_) => {
-                            eprintln!("cd:{}: No such file or directory", path.display());
+                            eprintln!("cd: {}: No such file or directory", path.display());
                             io::stderr().flush().unwrap();
                         }
                     }
