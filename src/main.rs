@@ -25,7 +25,7 @@ fn main() -> ExitCode {
             Ok(command) => match command {
                 Command::Exit(code) => return code,
                 Command::Echo(echo) => {
-                    println!("{}", echo);
+                    println!("{}", parse_shell_arguments(echo).join(" "));
                 }
                 Command::Type(command_type) => {
                     println!("{}", handle_command_type(command_type));
@@ -43,7 +43,9 @@ fn main() -> ExitCode {
                     } else {
                         fixed_path.to_string()
                     };
+
                     let path = Path::new(&resolved_path);
+
                     match env::set_current_dir(path) {
                         Ok(_) => {}
                         Err(_) => {
@@ -51,6 +53,9 @@ fn main() -> ExitCode {
                             io::stderr().flush().unwrap();
                         }
                     }
+                }
+                Command::Cat(content) => {
+                    println!("{}", handle_cat_content(content));
                 }
                 Command::Executable(executable) => {
                     match std::process::Command::new(executable[0]).args(&executable[1..]).spawn() {
@@ -78,7 +83,7 @@ fn main() -> ExitCode {
 
 fn handle_command_type(command: &str) -> String {
     match command {
-        "echo" | "exit" | "type" | "pwd" | "cd" => {
+        "echo" | "exit" | "type" | "pwd" | "cd" | "cat" => {
             format!("{command} is a shell builtin")
         },
         _ => match handle_path(command) {
@@ -111,4 +116,54 @@ fn handle_path(command: &str) -> Option<PathBuf> {
         }
     }
     None
+}
+
+fn parse_shell_arguments(input: &str) -> Vec<String> {
+    let mut args = Vec::new();
+    let mut current = String::new();
+    let mut in_quotes = false;
+    let mut chars = input.chars().peekable();
+
+    while let Some(c) = chars.next() {
+        match c {
+            '\'' => {
+                in_quotes = !in_quotes;
+                if !in_quotes && current.is_empty() {
+                    continue;
+                }
+            }
+            ' ' if !in_quotes => {
+                if !current.is_empty() {
+                    args.push(current.clone());
+                    current.clear();
+                }
+                while let Some(' ') = chars.peek() {
+                    chars.next();
+                }
+            }
+            _ => {
+                current.push(c);
+            }
+        }
+    }
+
+    if !current.is_empty() {
+        args.push(current);
+    }
+
+    args
+}
+
+fn handle_cat_content(content: &str) -> String {
+    let args = parse_shell_arguments(content);
+
+    let mut output = String::new();
+    for path in args {
+        match fs::read_to_string(&path) {
+            Ok(content) => output.push_str(&content),
+            Err(err) => eprintln!("Error reading {}: {}", path, err),
+        }
+    }
+
+   output.trim_end().to_string()
 }

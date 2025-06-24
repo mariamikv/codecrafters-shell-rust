@@ -7,6 +7,7 @@ pub enum Command<'k> {
     Type(&'k str),
     Pwd(&'k str),
     Cd(&'k str),
+    Cat(&'k str),
     Executable(Vec<&'k str>),
 }
 
@@ -32,6 +33,9 @@ impl<'k> Command<'k> {
             "cd" => {
                 let arg = value.get(2..).unwrap_or("").trim();
                 Ok(Self::Cd(arg))
+            }
+            "cat" => {
+                Ok(Self::Cat(value.strip_prefix("cat ").unwrap_or("")))
             }
             _ => Ok(Self::Executable(value.split_whitespace().collect())),
         }
