@@ -121,18 +121,21 @@ fn handle_path(command: &str) -> Option<PathBuf> {
 fn parse_shell_arguments(input: &str) -> Vec<String> {
     let mut args = Vec::new();
     let mut current = String::new();
-    let mut in_quotes = false;
     let mut chars = input.chars().peekable();
+    let mut quote_char: Option<char> = None;
 
     while let Some(c) = chars.next() {
         match c {
-            '\'' => {
-                in_quotes = !in_quotes;
-                if !in_quotes && current.is_empty() {
-                    continue;
+            '\'' | '"' => {
+                if quote_char.is_none() {
+                    quote_char = Some(c);
+                } else if quote_char == Some(c) {
+                    quote_char = None;
+                } else {
+                    current.push(c);
                 }
             }
-            ' ' if !in_quotes => {
+            ' ' if quote_char.is_none() => {
                 if !current.is_empty() {
                     args.push(current.clone());
                     current.clear();
@@ -141,9 +144,7 @@ fn parse_shell_arguments(input: &str) -> Vec<String> {
                     chars.next();
                 }
             }
-            _ => {
-                current.push(c);
-            }
+            _ => current.push(c),
         }
     }
 
@@ -154,14 +155,18 @@ fn parse_shell_arguments(input: &str) -> Vec<String> {
     args
 }
 
+
 fn handle_cat_content(content: &str) -> String {
     let args = parse_shell_arguments(content);
-
     let mut output = String::new();
-    for path in args {
-        match fs::read_to_string(&path) {
-            Ok(content) => output.push_str(&content),
-            Err(err) => eprintln!("Error reading {}: {}", path, err),
+
+    for file in args {
+        match fs::read_to_string(&file) {
+            Ok(content) => {
+                output.push_str(content.trim_end());
+                output.push(' ');
+            }
+            Err(err) => eprintln!("cat: {}: {}", file, err),
         }
     }
 
