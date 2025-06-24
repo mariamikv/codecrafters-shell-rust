@@ -126,38 +126,51 @@ fn parse_shell_arguments(input: &str) -> Vec<String> {
     let mut escape_next = false;
 
     while let Some(c) = chars.next() {
-        if escape_next {
-            current.push(c);
-            escape_next = false;
-            continue;
-        }
+        if let Some('"') = quote_char {
+            if escape_next {
+                match c {
+                    '"' | '\\' => current.push(c),
+                    _ => {
+                        current.push('\\');
+                        current.push(c);
+                    }
+                }
+                escape_next = false;
+                continue;
+            }
 
-        match c {
-            '\\' if quote_char.is_none() => {
-                escape_next = true;
+            match c {
+                '\\' => escape_next = true,
+                '"' => quote_char = None,
+                _ => current.push(c),
             }
-            '\\' if quote_char == Some('"') => {
-                current.push('\\');
+        } else if let Some('\'') = quote_char {
+            if c == '\'' {
+                quote_char = None;
+            } else {
+                current.push(c);
             }
-            '\'' | '"' => {
-                if quote_char.is_none() {
-                    quote_char = Some(c);
-                } else if quote_char == Some(c) {
-                    quote_char = None;
-                } else {
-                    current.push(c);
+        } else {
+            if escape_next {
+                current.push(c);
+                escape_next = false;
+                continue;
+            }
+
+            match c {
+                '\\' => escape_next = true,
+                '\'' | '"' => quote_char = Some(c),
+                ' ' => {
+                    if !current.is_empty() {
+                        args.push(current.clone());
+                        current.clear();
+                    }
+                    while let Some(' ') = chars.peek() {
+                        chars.next();
+                    }
                 }
+                _ => current.push(c),
             }
-            ' ' if quote_char.is_none() => {
-                if !current.is_empty() {
-                    args.push(current.clone());
-                    current.clear();
-                }
-                while let Some(' ') = chars.peek() {
-                    chars.next();
-                }
-            }
-            _ => current.push(c),
         }
     }
 
