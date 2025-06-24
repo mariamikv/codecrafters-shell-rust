@@ -1,4 +1,6 @@
+use std::fs;
 use std::process::ExitCode;
+use std::process::Command as ProcessCommand;
 
 #[derive(Debug)]
 pub enum Command<'k> {
@@ -37,7 +39,25 @@ impl<'k> Command<'k> {
             "cat" => {
                 Ok(Self::Cat(value.strip_prefix("cat ").unwrap_or("")))
             }
-            _ => Ok(Self::Executable(value.split_whitespace().collect())),
+            _ => {
+                let parsed = parse_shell_arguments(value);
+                let mut slices = Vec::new();
+                let mut start_idx = 0;
+
+                for word in parsed {
+                    if let Some(found) = value[start_idx..].find(&word) {
+                        let begin = start_idx + found;
+                        let end = begin + word.len();
+                        slices.push(&value[begin..end]);
+                        start_idx = end;
+                    } else {
+                        // fallback if exact match isn't found (edge case)
+                        slices.push(Box::leak(word.into_boxed_str()));
+                    }
+                }
+
+                Ok(Command::Executable(slices))
+            }
         }
     }
 }
@@ -50,4 +70,67 @@ fn parse_exit_command(command: &str) -> Result<ExitCode, anyhow::Error> {
         .parse::<u8>()?;
 
     Ok(ExitCode::from(exit_code))
+}
+
+pub fn parse_shell_arguments(input: &str) -> Vec<String> {
+    let mut args = Vec::new();
+    let mut current = String::new();
+    let mut chars = input.chars().peekable();
+    let mut quote_char: Option<char> = None;
+    let mut escape_next = false;
+
+    while let Some(c) = chars.next() {
+        if let Some('"') = quote_char {
+            if escape_next {
+                match c {
+                    '"' | '\\' => current.push(c),
+                    _ => {
+                        current.push('\\');
+                        current.push(c);
+                    }
+                }
+                escape_next = false;
+                continue;
+            }
+
+            match c {
+                '\\' => escape_next = true,
+                '"' => quote_char = None,
+                _ => current.push(c),
+            }
+        } else if let Some('\'') = quote_char {
+            if c == '\'' {
+                quote_char = None;
+            } else {
+                current.push(c);
+            }
+        } else {
+            if escape_next {
+                current.push(c);
+                escape_next = false;
+                continue;
+            }
+
+            match c {
+                '\\' => escape_next = true,
+                '\'' | '"' => quote_char = Some(c),
+                ' ' => {
+                    if !current.is_empty() {
+                        args.push(current.clone());
+                        current.clear();
+                    }
+                    while let Some(' ') = chars.peek() {
+                        chars.next();
+                    }
+                }
+                _ => current.push(c),
+            }
+        }
+    }
+
+    if !current.is_empty() {
+        args.push(current);
+    }
+
+    args
 }

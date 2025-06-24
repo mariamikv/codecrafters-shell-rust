@@ -5,6 +5,7 @@ use std::io::{self, Write};
 use std::path::{Path, PathBuf};
 use std::process::{ExitCode};
 use crate::command::Command;
+use crate::command::parse_shell_arguments;
 use std::{env, fs};
 
 fn main() -> ExitCode {
@@ -116,69 +117,6 @@ fn handle_path(command: &str) -> Option<PathBuf> {
         }
     }
     None
-}
-
-fn parse_shell_arguments(input: &str) -> Vec<String> {
-    let mut args = Vec::new();
-    let mut current = String::new();
-    let mut chars = input.chars().peekable();
-    let mut quote_char: Option<char> = None;
-    let mut escape_next = false;
-
-    while let Some(c) = chars.next() {
-        if let Some('"') = quote_char {
-            if escape_next {
-                match c {
-                    '"' | '\\' => current.push(c),
-                    _ => {
-                        current.push('\\');
-                        current.push(c);
-                    }
-                }
-                escape_next = false;
-                continue;
-            }
-
-            match c {
-                '\\' => escape_next = true,
-                '"' => quote_char = None,
-                _ => current.push(c),
-            }
-        } else if let Some('\'') = quote_char {
-            if c == '\'' {
-                quote_char = None;
-            } else {
-                current.push(c);
-            }
-        } else {
-            if escape_next {
-                current.push(c);
-                escape_next = false;
-                continue;
-            }
-
-            match c {
-                '\\' => escape_next = true,
-                '\'' | '"' => quote_char = Some(c),
-                ' ' => {
-                    if !current.is_empty() {
-                        args.push(current.clone());
-                        current.clear();
-                    }
-                    while let Some(' ') = chars.peek() {
-                        chars.next();
-                    }
-                }
-                _ => current.push(c),
-            }
-        }
-    }
-
-    if !current.is_empty() {
-        args.push(current);
-    }
-
-    args
 }
 
 fn handle_cat_content(content: &str) -> String {
