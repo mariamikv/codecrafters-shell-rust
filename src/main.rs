@@ -164,7 +164,6 @@ fn handle_cat_content(content: &str) -> String {
         match fs::read_to_string(&file) {
             Ok(content) => {
                 output.push_str(content.trim_end());
-                output.push(' ');
             }
             Err(err) => eprintln!("cat: {}: {}", file, err),
         }
