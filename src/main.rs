@@ -123,9 +123,22 @@ fn parse_shell_arguments(input: &str) -> Vec<String> {
     let mut current = String::new();
     let mut chars = input.chars().peekable();
     let mut quote_char: Option<char> = None;
+    let mut escape_next = false;
 
     while let Some(c) = chars.next() {
+        if escape_next {
+            current.push(c);
+            escape_next = false;
+            continue;
+        }
+
         match c {
+            '\\' if quote_char.is_none() => {
+                escape_next = true;
+            }
+            '\\' if quote_char == Some('"') => {
+                current.push('\\');
+            }
             '\'' | '"' => {
                 if quote_char.is_none() {
                     quote_char = Some(c);
@@ -154,7 +167,6 @@ fn parse_shell_arguments(input: &str) -> Vec<String> {
 
     args
 }
-
 
 fn handle_cat_content(content: &str) -> String {
     let args = parse_shell_arguments(content);
