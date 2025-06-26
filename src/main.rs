@@ -31,22 +31,7 @@ fn main() -> ExitCode {
                 Command::Echo(echo) => {
                     let output = parse_shell_arguments(echo).join(" ");
 
-                    if let Some(ref path) = redirect_target {
-                        if let Some(parent) = Path::new(path).parent() {
-                            let _ = fs::create_dir_all(parent);
-                        }
-
-                        match File::create(path) {
-                            Ok(mut file) => {
-                                let _ = writeln!(file, "{}", output);
-                            }
-                            Err(e) => {
-                                eprintln!("Redirection failed: {}", e);
-                            }
-                        }
-                    } else {
-                        println!("{}", output);
-                    }
+                    create_file_path(redirect_target, output)
                 }
 
                 Command::Type(command_type) => {
@@ -77,8 +62,11 @@ fn main() -> ExitCode {
                     }
                 }
                 Command::Cat(content) => {
-                    println!("{}", handle_cat_content(content));
+                    let output = handle_cat_content(content);
+
+                    create_file_path(redirect_target, output)
                 }
+
                 Command::Executable(executable) => {
                     let mut cmd = std::process::Command::new(executable[0]);
                     cmd.args(&executable[1..]);
@@ -178,4 +166,26 @@ fn handle_cat_content(content: &str) -> String {
     }
 
    output.trim_end().to_string()
+}
+
+fn create_file_path(
+    redirect_target: Option<String>,
+    output: String,
+) {
+    if let Some(ref path) = redirect_target {
+        if let Some(parent) = Path::new(path).parent() {
+            let _ = fs::create_dir_all(parent);
+        }
+        match File::create(path) {
+            Ok(mut file) => {
+                let _ = writeln!(file, "{}", output);
+            }
+            Err(e) => {
+                eprintln!("Redirection failed: {}", e);
+            }
+        }
+
+    } else {
+        println!("{}", output);
+    }
 }
