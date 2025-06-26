@@ -3,10 +3,11 @@ pub mod command;
 #[allow(unused_imports)]
 use std::io::{self, Write};
 use std::path::{Path, PathBuf};
-use std::process::{ExitCode};
-use crate::command::Command;
+use std::process::{ExitCode, Stdio};
+use crate::command::{split_redirect_input, Command};
 use crate::command::parse_shell_arguments;
 use std::{env, fs};
+use std::fs::File;
 
 fn main() -> ExitCode {
     loop {
@@ -22,7 +23,9 @@ fn main() -> ExitCode {
             continue;
         }
 
-        match Command::handle_command(input) {
+        let (command_part, redirect_target) = split_redirect_input(input);
+
+        match Command::handle_command(&command_part) {
             Ok(command) => match command {
                 Command::Exit(code) => return code,
                 Command::Echo(echo) => {
@@ -59,21 +62,39 @@ fn main() -> ExitCode {
                     println!("{}", handle_cat_content(content));
                 }
                 Command::Executable(executable) => {
-                    match std::process::Command::new(executable[0]).args(&executable[1..]).spawn() {
-                        Ok(program) => match program.wait_with_output() {
+                    let mut cmd = std::process::Command::new(executable[0]);
+                    cmd.args(&executable[1..]);
+
+                    if let Some(ref path) = redirect_target {
+                        match File::create(path) {
+                            Ok(file) => {
+                                cmd.stdout(Stdio::from(file));
+                            }
+                            Err(e) => {
+                                eprintln!("Redirection failed: {}", e);
+                                continue;
+                            }
+                        }
+                    }
+
+                    match cmd.spawn() {
+                        Ok(child) => match child.wait_with_output() {
                             Ok(output) => {
-                                print!("{}", String::from_utf8_lossy(&output.stderr));
-                                print!("{}", String::from_utf8_lossy(&output.stdout));
+                                eprint!("{}", String::from_utf8_lossy(&output.stderr));
+                                if redirect_target.is_none() {
+                                    print!("{}", String::from_utf8_lossy(&output.stdout));
+                                }
                             }
                             Err(err) => {
-                                println!("{}", err.to_string());
-                            },
+                                eprintln!("Execution failed: {}", err);
+                            }
                         },
                         Err(_) => {
-                            println!("{}: command not found", executable[0]);
+                            eprintln!("{}: command not found", executable[0]);
                         }
                     }
                 }
+
             }
             Err(e) => {
                 println!("{}", e.to_string());

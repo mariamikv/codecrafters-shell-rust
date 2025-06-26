@@ -1,6 +1,4 @@
-use std::fs;
 use std::process::ExitCode;
-use std::process::Command as ProcessCommand;
 
 #[derive(Debug)]
 pub enum Command<'k> {
@@ -12,7 +10,7 @@ pub enum Command<'k> {
     Cat(&'k str),
     Executable(Vec<&'k str>),
 }
-//test
+
 impl<'k> Command<'k> {
     pub fn handle_command(value: &'k str) -> Result<Self, anyhow::Error> {
         let mut commands = value.split_whitespace();
@@ -133,4 +131,14 @@ pub fn parse_shell_arguments(input: &str) -> Vec<String> {
     }
 
     args
+}
+
+pub fn split_redirect_input(input: &str) -> (String, Option<String>) {
+    if let Some((left, right)) = input.split_once("1>") {
+        (left.trim().to_string(), Some(right.trim().to_string()))
+    } else if let Some((left, right)) = input.split_once('>') {
+        (left.trim().to_string(), Some(right.trim().to_string()))
+    } else {
+        (input.trim().to_string(), None)
+    }
 }
