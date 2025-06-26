@@ -29,8 +29,26 @@ fn main() -> ExitCode {
             Ok(command) => match command {
                 Command::Exit(code) => return code,
                 Command::Echo(echo) => {
-                    println!("{}", parse_shell_arguments(echo).join(" "));
+                    let output = parse_shell_arguments(echo).join(" ");
+
+                    if let Some(ref path) = redirect_target {
+                        if let Some(parent) = Path::new(path).parent() {
+                            let _ = fs::create_dir_all(parent);
+                        }
+
+                        match File::create(path) {
+                            Ok(mut file) => {
+                                let _ = writeln!(file, "{}", output);
+                            }
+                            Err(e) => {
+                                eprintln!("Redirection failed: {}", e);
+                            }
+                        }
+                    } else {
+                        println!("{}", output);
+                    }
                 }
+
                 Command::Type(command_type) => {
                     println!("{}", handle_command_type(command_type));
                 }
