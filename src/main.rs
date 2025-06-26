@@ -23,7 +23,7 @@ fn main() -> ExitCode {
             continue;
         }
 
-        let (command_part, redirect_target) = split_redirect_input(input);
+        let (command_part, redirect_stdout, redirect_stderr) = split_redirect_input(input);
 
         match Command::handle_command(&command_part) {
             Ok(command) => match command {
@@ -31,7 +31,7 @@ fn main() -> ExitCode {
                 Command::Echo(echo) => {
                     let output = parse_shell_arguments(echo).join(" ");
 
-                    create_file_path(redirect_target, output)
+                    create_file_path(redirect_stdout, output)
                 }
 
                 Command::Type(command_type) => {
@@ -64,17 +64,29 @@ fn main() -> ExitCode {
                 Command::Cat(content) => {
                     let output = handle_cat_content(content);
 
-                    create_file_path(redirect_target, output)
+                    create_file_path(redirect_stdout, output)
                 }
 
                 Command::Executable(executable) => {
                     let mut cmd = std::process::Command::new(executable[0]);
                     cmd.args(&executable[1..]);
 
-                    if let Some(ref path) = redirect_target {
+                    if let Some(ref path) = redirect_stdout {
                         match File::create(path) {
                             Ok(file) => {
                                 cmd.stdout(Stdio::from(file));
+                            }
+                            Err(e) => {
+                                eprintln!("Redirection failed: {}", e);
+                                continue;
+                            }
+                        }
+                    }
+
+                    if let Some(ref path) = redirect_stderr {
+                        match File::create(path) {
+                            Ok(file) => {
+                                cmd.stderr(Stdio::from(file));
                             }
                             Err(e) => {
                                 eprintln!("Redirection failed: {}", e);
@@ -87,7 +99,7 @@ fn main() -> ExitCode {
                         Ok(child) => match child.wait_with_output() {
                             Ok(output) => {
                                 eprint!("{}", String::from_utf8_lossy(&output.stderr));
-                                if redirect_target.is_none() {
+                                if redirect_stdout.is_none() {
                                     print!("{}", String::from_utf8_lossy(&output.stdout));
                                 }
                             }

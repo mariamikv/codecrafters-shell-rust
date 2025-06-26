@@ -133,12 +133,23 @@ pub fn parse_shell_arguments(input: &str) -> Vec<String> {
     args
 }
 
-pub fn split_redirect_input(input: &str) -> (String, Option<String>) {
-    if let Some((left, right)) = input.split_once("1>") {
-        (left.trim().to_string(), Some(right.trim().to_string()))
-    } else if let Some((left, right)) = input.split_once('>') {
-        (left.trim().to_string(), Some(right.trim().to_string()))
-    } else {
-        (input.trim().to_string(), None)
+pub fn split_redirect_input(input: &str) -> (String, Option<String>, Option<String>) {
+    let mut command = input;
+    let mut stdout_path = None;
+    let mut stderr_path = None;
+
+    if let Some((left, right)) = command.split_once("2>") {
+        command = left.trim();
+        stderr_path = Some(right.trim().to_string());
     }
+
+    if let Some((left, right)) = command.split_once("1>") {
+        command = left.trim();
+        stdout_path = Some(right.trim().to_string());
+    } else if let Some((left, right)) = command.split_once('>') {
+        command = left.trim();
+        stdout_path = Some(right.trim().to_string());
+    }
+
+    (command.to_string(), stdout_path, stderr_path)
 }
