@@ -167,7 +167,13 @@ fn handle_cat_content(content: &str) -> String {
             Ok(content) => {
                 output.push_str(content.trim_end());
             }
-            Err(err) => eprintln!("cat: {}: {}", file, err),
+            Err(err) => {
+                if err.kind() == io::ErrorKind::NotFound {
+                    eprintln!("cat: {}: No such file or directory", file);
+                } else {
+                    eprintln!("cat: {}: {}", file, err);
+                }
+            }
         }
     }
 
