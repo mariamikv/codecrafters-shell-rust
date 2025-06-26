@@ -12,7 +12,7 @@ pub enum Command<'k> {
     Cat(&'k str),
     Executable(Vec<&'k str>),
 }
-
+//test
 impl<'k> Command<'k> {
     pub fn handle_command(value: &'k str) -> Result<Self, anyhow::Error> {
         let mut commands = value.split_whitespace();
