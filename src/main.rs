@@ -30,6 +30,7 @@ fn main() -> ExitCode {
                 Command::Exit(code) => return code,
                 Command::Echo(echo) => {
                     let output = parse_shell_arguments(echo).join(" ");
+
                     if let Some(out) = redirect_stdout.as_ref() {
                         if let Some(parent) = Path::new(out).parent() {
                             let _ = fs::create_dir_all(parent);
@@ -40,8 +41,14 @@ fn main() -> ExitCode {
                     } else {
                         println!("{}", output);
                     }
-                }
 
+                    if let Some(err) = redirect_stderr.as_ref() {
+                        if let Some(parent) = Path::new(err).parent() {
+                            let _ = fs::create_dir_all(parent);
+                        }
+                        let _ = File::create(err);
+                    }
+                }
                 Command::Type(command_type) => {
                     println!("{}", handle_command_type(command_type));
                 }
