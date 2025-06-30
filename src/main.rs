@@ -30,32 +30,18 @@ fn main() -> ExitCode {
                 Command::Exit(code) => return code,
                 Command::Echo(echo) => {
                     let output = parse_shell_arguments(echo).join(" ");
-
-                    match (redirect_stdout.as_ref(), redirect_stderr.as_ref()) {
-                        (Some(out), _) => {
-                            if let Some(parent) = Path::new(out).parent() {
-                                let _ = fs::create_dir_all(parent);
-                            }
-
-                            if let Ok(mut file) = File::create(out) {
-                                let _ = writeln!(file, "{}", output);
-                            }
+                    if let Some(out) = redirect_stdout.as_ref() {
+                        if let Some(parent) = Path::new(out).parent() {
+                            let _ = fs::create_dir_all(parent);
                         }
-                        (None, Some(err)) => {
-                            if let Some(parent) = Path::new(err).parent() {
-                                let _ = fs::create_dir_all(parent);
-                            }
-
-                            if let Ok(mut file) = File::create(err) {
-                                let _ = writeln!(file, "{}", output);
-                            }
+                        if let Ok(mut file) = File::create(out) {
+                            let _ = writeln!(file, "{}", output);
                         }
-                        (None, None) => {
-                            println!("{}", output); 
-                        }
+                    } else {
+                        println!("{}", output);
                     }
                 }
-                
+
                 Command::Type(command_type) => {
                     println!("{}", handle_command_type(command_type));
                 }
@@ -78,8 +64,13 @@ fn main() -> ExitCode {
                     match env::set_current_dir(path) {
                         Ok(_) => {}
                         Err(_) => {
-                            eprintln!("cd: {}: No such file or directory", path.display());
-                            io::stderr().flush().unwrap();
+                            if let Some(err_path) = &redirect_stderr {
+                                if let Ok(mut file) = File::create(err_path) {
+                                    let _ = writeln!(file, "cd: {}: No such file or directory", path.display());
+                                }
+                            } else {
+                                eprintln!("cd: {}: No such file or directory", path.display());
+                            }
                         }
                     }
                 }
@@ -91,7 +82,6 @@ fn main() -> ExitCode {
                     let output = handle_cat_content(content, stderr_file.as_mut());
                     create_file_path(redirect_stdout, output);
                 }
-
                 Command::Executable(executable) => {
                     let mut cmd = std::process::Command::new(executable[0]);
                     cmd.args(&executable[1..]);
@@ -201,7 +191,7 @@ fn handle_cat_content(content: &str, mut redirect_stderr: Option<&mut File>) -> 
 
                 match redirect_stderr.as_mut() {
                     Some(f) => {
-                        let _ = f.write_all(msg.as_bytes());
+                        let _ = f.write_all(format!("{}\n", msg).as_bytes());
                     }
                     None => {
                         eprint!("{}", msg);
