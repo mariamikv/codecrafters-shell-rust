@@ -198,10 +198,10 @@ fn handle_cat_content(content: &str, mut redirect_stderr: Option<&mut File>) -> 
 
                 match redirect_stderr.as_mut() {
                     Some(f) => {
-                        let _ = f.write_all(format!("{}\n", msg).as_bytes());
+                        let _ = writeln!(f, "{}", msg);
                     }
                     None => {
-                        eprint!("{}", msg);
+                        eprintln!("{}", msg);
                     }
                 }
             }
