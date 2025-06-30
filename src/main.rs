@@ -160,24 +160,21 @@ fn handle_command_type(command: &str) -> String {
 }
 
 fn handle_path(command: &str) -> Option<PathBuf> {
-    let path = env::var("PATH").ok()?;
-    for dir in path.split(":") {
-        match fs::read_dir(Path::new(dir)) {
-            Ok(mut read_dir) => {
-                if let Some(path) = read_dir.find(|maybe_dir_entry| {
-                    maybe_dir_entry
-                        .as_ref()
-                        .is_ok_and(|dir_entry| dir_entry.file_name() == command)
-                }) {
-                    if let Ok(path) = path {
-                        return Some(path.path());
-                    }
-                }
-            }
-            Err(_) => continue,
+    let path_env = env::var("PATH").ok()?;
+    for dir in path_env.split(':') {
+        let full_path = Path::new(dir).join(command);
+        if full_path.exists() && is_executable(&full_path) {
+            return Some(full_path);
         }
     }
     None
+}
+
+fn is_executable(path: &Path) -> bool {
+    use std::os::unix::fs::PermissionsExt;
+    fs::metadata(path)
+        .map(|m| m.permissions().mode() & 0o111 != 0)
+        .unwrap_or(false)
 }
 
 fn handle_cat_content(content: &str, mut redirect_stderr: Option<&mut File>) -> String {
